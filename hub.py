@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from drone import Drone
+    from connection import Connection
 
 
 class Hub:
@@ -24,6 +25,7 @@ class Hub:
         self.color = color
         self.cost = 1
         self.drones: list[Drone] = []
+        self.links: list[Connection] = []
 
     def can_add_drone(self) -> bool:
         return len(self.drones) < self.max_drones

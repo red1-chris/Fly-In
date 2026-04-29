@@ -18,6 +18,8 @@ class Parser:
         self.nb_drones: int = 0
         self.hubs: Dict[str, Hub] = {}
         self.connections: List[Connection] = []
+        self.start_hub: Hub = None
+        self.end_hub: Hub = None
 
     def parse_metadata(self, raw_meta: str | None) -> Dict[str, str]:
         if not raw_meta:
@@ -59,6 +61,10 @@ class Parser:
         x, y = int(match.group(3)), int(match.group(4))
         meta = self.parse_metadata(match.group(5))
         self.hubs[name] = HubFactory.create(h_type, name, x, y, meta)
+        if h_type == "start_hub":
+            self.start_hub = self.hubs[name]
+        elif h_type == "end_hub":
+            self.end_hub = self.hubs[name]
         print(f"Creating Hub: {name} of type {h_type} at ({x}, {y}) "
               f"with meta {meta}")
 
@@ -69,6 +75,10 @@ class Parser:
         if name_a not in self.hubs or name_b not in self.hubs:
             raise ValueError(f"Connection Error: {name_a} or {name_b} "
                              "not defined")
-        new_conn = Connection(self.hubs[name_a], self.hubs[name_b])
+        hub_a = self.hubs[name_a]
+        hub_b = self.hubs[name_b]
+        new_conn = Connection(hub_a, hub_b)
         self.connections.append(new_conn)
+        hub_a.links.append(new_conn)
+        hub_b.links.append(new_conn)
         print(f"Creating Connection: {name_a} <-> {name_b} with meta {meta}")
