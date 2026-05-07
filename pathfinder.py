@@ -14,7 +14,7 @@ class Pathfinder:
         # priority_queue contains tuples (distance, hub)
         pq = [(0, start_hub)]
         while pq:
-            #headpop() return the element at index 0
+            #headpop() pops the smallest item off the heap
             current_dist, current_hub = heapq.heappop(pq)
             if current_dist > distances.get(current_hub, float('inf')):
                 continue
@@ -26,7 +26,7 @@ class Pathfinder:
                     parents[neighbour] = current_hub
                     # heappush(): Push item onto heap while
                     # maintaining the heap invariant.
-                    heapq.headpush(pq, (new_dist, neighbour))
+                    heapq.heappush(pq, (new_dist, neighbour))
         return parents
     
     @staticmethod
