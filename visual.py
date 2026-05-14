@@ -29,3 +29,26 @@ def main_visual(simulation):
         # limits the FPS
         clock.tick(60)
     pygame.quit()
+
+    def to_pixel(x_logic, y_logic):
+        # SCALE : space in pix between 2 units from file
+        # if SCALE = 50 then point (1, 1) becomes (50, 50)
+        SCALE = 60
+        # OFFSET : to avoid being on the edge of the screen
+        OFFSET_X = 100
+        OFFSET_Y = 100
+
+        pixel_x = x_logic * SCALE + OFFSET_X
+        pixel_y = y_logic * SCALE + OFFSET_Y
+
+        return (int(pixel_x), int(pixel_y))
+    
+    def draw_everything(screen, simulation):
+        # Drawing Lines
+        for conn in simulation.connections:
+            h1, h2 = conn.zones
+            # convert logical positions (ex: 2, 3) in pixels (ex: 220, 280)
+            start_point = to_pixel(h1.x, h1.y)
+            end_point = to_pixel(h2.x, h2.y)
+            #Drawing lines with new coordonates
+            pygame.draw.line(screen, (150, 150, 150), start_point, end_point, 2)
