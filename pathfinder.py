@@ -28,7 +28,7 @@ class Pathfinder:
                     # maintaining the heap invariant.
                     heapq.heappush(pq, (new_dist, neighbour))
         return parents
-    
+
     @staticmethod
     def get_path(parents: Dict[Hub, Optional[Hub]], end_hub: Hub) -> List[Hub]:
         path = []

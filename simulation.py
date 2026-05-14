@@ -1,6 +1,6 @@
-from .parser import Parser
-from .drone import Drone
-from .pathfinder import Pathfinder
+from parser import Parser
+from drone import Drone
+from pathfinder import Pathfinder
 
 
 class Simulation:
@@ -9,7 +9,8 @@ class Simulation:
         self.connections = parser.connections
         self.start_hub = parser.start_hub
         self.end_hub = parser.end_hub
-        self.drones = [Drone(i, self.start_hub) for i in range(parser.nb_drones)]
+        self.drones = [Drone(i, self.start_hub)
+                       for i in range(parser.nb_drones)]
         for d in self.drones:
             self.start_hub.drones.append(d)
         self.pathfinder = Pathfinder()
@@ -23,7 +24,7 @@ class Simulation:
             if h2 in conn.zones:
                 return conn
         return None
-    
+
     def next_step(self):
         moves = []
         for conn in self.connections:
@@ -41,7 +42,7 @@ class Simulation:
                 if target_hub == self.end_hub:
                     drone.is_arrived = True
         return moves
-    
+
     def can_move_drone(self, drone, target_hub) -> bool:
         if not target_hub.can_add_drone():
             return False
