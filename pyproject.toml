@@ -1,0 +1,10 @@
+[project]
+name = "fly-in-drone-simulator"
+version = "0.1.0"
+description = "Simulateur de trafic de drones avec Pygame"
+dependencies = [
+    "pygame>=2.5.0",
+]
+
+[tool.uv]
+managed = true
