@@ -33,6 +33,9 @@ class Hub:
     def __repr__(self):
         return (f"Hub(name='{self.name}', type='{self.type}', "
                 f"drones={len(self.drones)}/{self.max_drones})")
+    
+    def __lt__(self, other: Hub) -> bool:
+        return self.name < other.name
 
 
 class RestrictedHub(Hub):
