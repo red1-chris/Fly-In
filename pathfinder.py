@@ -8,11 +8,11 @@ class Pathfinder:
     @staticmethod
     def dijkstra(start_hub: Hub) -> Dict[Hub, Optional[Hub]]:
         # distance[hub] = min time to reach hub from start_hub
-        distances: Dict[Hub, float] = {start_hub: 0}
+        distances: Dict[Hub, float] = {start_hub: 0.0}
         # parents[hub] = previous hub in quickest path from start_hub
         parents: Dict[Hub, Optional[Hub]] = {start_hub: None}
         # priority_queue contains tuples (distance, hub)
-        pq = [(0, start_hub)]
+        pq = [(0.0, start_hub)]
         while pq:
             # headpop() pops the smallest item off the heap
             current_dist, current_hub = heapq.heappop(pq)
@@ -20,7 +20,12 @@ class Pathfinder:
                 continue
             for link in current_hub.links:
                 neighbour = link.get_destination(current_hub)
-                new_dist = current_dist + neighbour.cost
+                if neighbour.type == 'priority':
+                    step_cost = neighbour.cost - 0.001
+                else:
+                    step_cost = float(neighbour.cost)
+
+                new_dist = current_dist + step_cost
                 if new_dist < distances.get(neighbour, float('inf')):
                     distances[neighbour] = new_dist
                     parents[neighbour] = current_hub
