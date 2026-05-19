@@ -14,7 +14,7 @@ class Pathfinder:
         # priority_queue contains tuples (distance, hub)
         pq = [(0, start_hub)]
         while pq:
-            #headpop() pops the smallest item off the heap
+            # headpop() pops the smallest item off the heap
             current_dist, current_hub = heapq.heappop(pq)
             if current_dist > distances.get(current_hub, float('inf')):
                 continue

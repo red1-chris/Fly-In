@@ -1,29 +1,32 @@
 import pygame
-import sys
+
 
 def to_pixel(x_logic, y_logic, scale, offset_x=50, offset_y=50):
-    # converts coordinates into pixels using scale and offsets to center the map
+    # converts coordinates into pixels using scale and offsets to
+    # center the map
     pixel_x = x_logic * scale + offset_x
     pixel_y = y_logic * scale + offset_y
     return (int(pixel_x), int(pixel_y))
 
-def draw_everything(screen, simulation, scale, offset_x, offset_y, turn_count):
+
+def draw_everything(screen, simulation, scale, offset_x, offset_y,
+                    turn_count):
     font_hud = pygame.font.SysFont("Arial", 16, bold=True)
     font_title = pygame.font.SysFont("Arial", 20, bold=True)
-    
+
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     GREY = (150, 150, 150)
-    
+
     is_finished = all(drone.is_arrived for drone in simulation.drones)
-        
+
     if is_finished:
         status_text = f"Simulation over in {turn_count - 1} turns !"
-        status_color = (50, 255, 50) # Vert brillant
+        status_color = (50, 255, 50)
     else:
         status_text = f"Tour : #{turn_count}"
-        status_color = WHITE # Blanc
-    
+        status_color = WHITE
+
     text_turn = font_title.render(status_text, True, status_color)
     screen.blit(text_turn, (20, 20))
     for conn in simulation.connections:
@@ -31,7 +34,7 @@ def draw_everything(screen, simulation, scale, offset_x, offset_y, turn_count):
         start_point = to_pixel(h1.x, h1.y, scale, offset_x, offset_y)
         end_point = to_pixel(h2.x, h2.y, scale, offset_x, offset_y)
         pygame.draw.line(screen, GREY, start_point, end_point, 2)
-                            
+
     for name, hub in simulation.hubs.items():
         center = to_pixel(hub.x, hub.y, scale, offset_x, offset_y)
         color = (0, 200, 255)
@@ -43,7 +46,7 @@ def draw_everything(screen, simulation, scale, offset_x, offset_y, turn_count):
             color = (255, 165, 0)
         elif hub.type == "blocked":
             color = (100, 100, 100)
-            
+
         hub_rect = pygame.Rect(center[0] - 15, center[1] - 15, 30, 30)
         pygame.draw.rect(screen, color, hub_rect)
         pygame.draw.rect(screen, BLACK, hub_rect, 2)
@@ -60,7 +63,7 @@ def draw_everything(screen, simulation, scale, offset_x, offset_y, turn_count):
             hub_drone_counts[hub] = 0
         index_on_hub = hub_drone_counts[hub]
         hub_drone_counts[hub] += 1
-        
+
         base_pos = to_pixel(hub.x, hub.y, scale, offset_x, offset_y)
         row = index_on_hub // 3
         col = index_on_hub % 3
@@ -85,10 +88,11 @@ def draw_everything(screen, simulation, scale, offset_x, offset_y, turn_count):
         end_line2 = (d_pos[0] + offset, d_pos[1] - offset)
         pygame.draw.line(screen, BLACK, start_line2, end_line2, width_line)
 
+
 def auto_scaling(simulation, screen_width, screen_height):
     if not simulation.hubs:
         return 60, 50, 50
-        
+
     max_x = max(h.x for h in simulation.hubs.values())
     max_y = max(h.y for h in simulation.hubs.values())
 
@@ -99,7 +103,7 @@ def auto_scaling(simulation, screen_width, screen_height):
     scale_y = (screen_height - 200) / max_y
 
     scale = min(scale_x, scale_y)
-    
+
     if scale > 150:
         scale = 150
 
@@ -108,11 +112,13 @@ def auto_scaling(simulation, screen_width, screen_height):
 
     return scale, offset_x, offset_y
 
+
 def main_visual(simulation, screen=None):
     pygame.init()
     if screen is None:
         current_w, current_h = 1000, 800
-        screen = pygame.display.set_mode((current_w, current_h), pygame.RESIZABLE)
+        screen = pygame.display.set_mode((current_w, current_h),
+                                         pygame.RESIZABLE)
     else:
         current_w, current_h = screen.get_size()
 
@@ -127,44 +133,46 @@ def main_visual(simulation, screen=None):
     font_btn = pygame.font.SysFont("Arial", 14, bold=True)
     turn_count = 1
     running = True
-    
+
     while running:
         mouse_pos = pygame.mouse.get_pos()
         btn_rect = pygame.Rect(current_w - 160, 20, 140, 35)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                
+
             elif event.type == pygame.VIDEORESIZE:
                 current_w, current_h = event.w, event.h
-                screen = pygame.display.set_mode((current_w, current_h), pygame.RESIZABLE)
-                scale, offset_x, offset_y = auto_scaling(simulation, current_w, current_h)
-                
+                screen = pygame.display.set_mode((current_w, current_h),
+                                                 pygame.RESIZABLE)
+                scale, offset_x, offset_y = auto_scaling(simulation,
+                                                         current_w, current_h)
+
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Si on clique sur le bouton "Retour Menu", on quitte la boucle de la simulation
                 if btn_rect.collidepoint(mouse_pos):
                     running = False
-                
+
             elif event.type == SIM_STEP_EVENT:
-                    moves = simulation.next_step()
-                    if moves:
-                        print(f"#{turn_count}")
-                        print(" ".join(moves))
-                        turn_count += 1
-                    if all(drone.is_arrived for drone in simulation.drones):
-                        pygame.time.set_timer(SIM_STEP_EVENT, 0)
+                moves = simulation.next_step()
+                if moves:
+                    print(f"#{turn_count}")
+                    print(" ".join(moves))
+                    turn_count += 1
+                if all(drone.is_arrived for drone in simulation.drones):
+                    pygame.time.set_timer(SIM_STEP_EVENT, 0)
 
         screen.fill((20, 20, 25))
 
-        draw_everything(screen, simulation, scale, offset_x, offset_y, turn_count)
+        draw_everything(screen, simulation, scale, offset_x,
+                        offset_y, turn_count)
 
         is_hovered = btn_rect.collidepoint(mouse_pos)
         btn_color = (0, 180, 230) if is_hovered else (40, 50, 65)
         text_color = (255, 255, 255) if is_hovered else (200, 210, 220)
-        
+
         pygame.draw.rect(screen, btn_color, btn_rect, border_radius=6)
         pygame.draw.rect(screen, (0, 0, 0), btn_rect, 1, border_radius=6)
-        
+
         text_btn = font_btn.render("< Back to Menu", True, text_color)
         t_rect = text_btn.get_rect()
         t_rect.center = btn_rect.center
@@ -172,5 +180,5 @@ def main_visual(simulation, screen=None):
 
         pygame.display.flip()
         clock.tick(60)
-        
+
     pygame.time.set_timer(SIM_STEP_EVENT, 0)

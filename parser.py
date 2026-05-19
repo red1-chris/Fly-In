@@ -1,7 +1,7 @@
 from hub import Hub, HubFactory
 from connection import Connection
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 class Parser:
@@ -18,8 +18,8 @@ class Parser:
         self.nb_drones: int = 0
         self.hubs: Dict[str, Hub] = {}
         self.connections: List[Connection] = []
-        self.start_hub: Hub = None
-        self.end_hub: Hub = None
+        self.start_hub: Optional[Hub] = None
+        self.end_hub: Optional[Hub] = None
 
     def parse_metadata(self, raw_meta: str | None) -> Dict[str, str]:
         if not raw_meta:

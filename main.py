@@ -5,6 +5,7 @@ from parser import Parser
 from simulation import Simulation
 from visual import main_visual
 
+
 def get_map_files(directory="maps"):
     map_files = []
     if not os.path.exists(directory):
@@ -15,6 +16,7 @@ def get_map_files(directory="maps"):
                 relative_path = os.path.join(root, file)
                 map_files.append(relative_path)
     return sorted(map_files)
+
 
 def run_menu(screen, map_files):
     clock = pygame.time.Clock()
@@ -43,10 +45,13 @@ def run_menu(screen, map_files):
                     if btn["rect"].collidepoint(mouse_pos):
                         return btn["path"]
         screen.fill(DARK_BG)
-        title_surface = font_title.render("Fly-in Drone Simulator - Menu", True, HOVER_COLOR)
+        title_surface = font_title.render("Fly-in Drone Simulator - Menu",
+                                          True, HOVER_COLOR)
         screen.blit(title_surface, (50, 40))
 
-        subtitle_surface = font_item.render("Select a map to start the simulation:", True, LIGHT_GREY)
+        subtitle_surface = font_item.render(
+            "Select a map to start the simulation:", True, LIGHT_GREY
+            )
         screen.blit(subtitle_surface, (50, 80))
 
         for btn in buttons:
@@ -54,11 +59,13 @@ def run_menu(screen, map_files):
             color = HOVER_COLOR if is_hovered else WHITE
 
             if is_hovered:
-                pygame.draw.rect(screen, (30, 40, 50), btn["rect"], border_radius=4)
+                pygame.draw.rect(
+                    screen, (30, 40, 50), btn["rect"], border_radius=4
+                    )
 
             text_surface = font_item.render(btn["name"], True, color)
             screen.blit(text_surface, (btn["rect"].x + 10, btn["rect"].y + 5))
-        
+
         pygame.display.flip()
         clock.tick(30)
 
@@ -93,6 +100,7 @@ def main():
             print(f"Error while loading map: {e}")
     pygame.quit()
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
