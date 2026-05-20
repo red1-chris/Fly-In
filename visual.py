@@ -11,7 +11,7 @@ def to_pixel(x_logic, y_logic, scale, offset_x=50, offset_y=50):
 
 def draw_everything(screen, simulation, scale, offset_x, offset_y,
                     turn_count):
-    font_hud = pygame.font.SysFont("Arial", 16, bold=True)
+    font_hud = pygame.font.SysFont("Arial", 13, bold=True)
     font_title = pygame.font.SysFont("Arial", 20, bold=True)
 
     WHITE = (255, 255, 255)
@@ -24,7 +24,7 @@ def draw_everything(screen, simulation, scale, offset_x, offset_y,
         status_text = f"Simulation over in {turn_count - 1} turns !"
         status_color = (50, 255, 50)
     else:
-        status_text = f"Tour : #{turn_count}"
+        status_text = f"Turn : #{turn_count}"
         status_color = WHITE
 
     text_turn = font_title.render(status_text, True, status_color)
