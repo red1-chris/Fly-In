@@ -2,78 +2,149 @@ _This project has been created as part_
 _of the 42 curriculum by credwand_
 
 
-## **_Description:_**
+## Description
 
-Fly-In is a 42's project that requires to read and parse a textual map
-and uses an algorithm to find the quickest path for drones to travel from the start point to the end point. We can show the drones' path by a visual representation.
+Fly-In is a 42 project that requires reading and parsing a textual map,
+then using a pathfinding algorithm to route multiple drones from a start
+zone to an end zone in the fewest possible simulation turns.
 
-**_Maps:_**
+The map is a graph of connected hubs. Each hub has a type (normal,
+restricted, blocked, priority) and a maximum drone capacity. Connections
+between hubs also have a capacity limit. The simulation moves drones
+turn by turn, respecting all capacity and movement constraints, while
+trying to minimize the total number of turns.
 
-The maps are represented by a hubs and connections between those hubs.
-There is a start_hub and an end_hub and named hubs between those.
-Hubs can be normal, restricted, blocked or prioritary, it will bias the path of the drones.
-They have a maximum capacity of drones autorised.
-Drones can travel in groups but they are limited by the capacity of the connections too.
-We used POO to define the different types of hub, the connections, the drones.
-The informations of these objects were filled with those from the maps parsed.
+**Hub types:**
+- `normal` — standard zone, costs 1 turn to enter
+- `restricted` — sensitive zone, costs 2 turns to enter (1 turn on the
+  connection, 1 turn stopped on the hub before moving again)
+- `priority` — preferred zone, costs 1 turn but favored by pathfinding
+- `blocked` — inaccessible, no drone may enter
 
-**_Parser:_**
 
-The Parser uses "regex" from Regular expressions.
-Regular expressions are extremely useful in extracting information from text such as code, log files, spreadsheets, or even documents.
-Those are essentially a tiny, highly specialized programming language embedded inside Python and made available through the re module.
-It's a bit long to explain but it looks like that:
-r"^(hub|start_hub|end_hub):\s+([^\s-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*)\])?$"
-^ is "start of string"
-$ is "end of string"
-\s+ is "multiple whitespaces" etc...
+## Algorithm
 
-So with regex, we exfiltrate the informations from the map file and distribute them in the different objects.
-We can parse metadatas too like color of the hub.
+**Pathfinding: Dijkstra + k-shortest paths**
 
-**_Algorithm:_**
+The core algorithm is Dijkstra's shortest path, implemented from scratch
+using Python's `heapq` module (no graph libraries allowed). It finds the
+minimum-cost path from start to end, where cost is the number of turns
+to traverse each hub (1 for normal/priority, 2 for restricted).
 
-Once we have our objects we can interact with them and throw an algorithm that will permit us to find the quickest path from start_hub to end_hub.
-In graph theory, the Dijkstra algorithm (pronounced [dɛɪkstra]) is used to solve the problem of the shortest path. It allows, for example, to determine a shorter path to get from one city to another knowing the road network of a region. More precisely, in a graph oriented weighted by positive reals G = ( S , A ), it calculates shorter paths from one source to all the other vertices. It can also be used to calculate a shorter path between a starting peak and an arrival peak.
-It seemed pertinent for the task of the subject.
-We used the heapq module.
-The heapq module doesn't create a new object type; instead, it provides functions (heappush and heappop) that manipulate a regular Python list while maintaining a binary heap structure behind the scenes.
-You initialize your priority queue (pq) as a list containing a tuple. The tuple is structured as (distance, hub).
-heappop() automatically extracts the tuple with the lowest current_dist from the list.
-Whenever the algorithm finds a shorter path to a neighboring hub, it pushes a new (new_dist, neighbour) tuple into the heap using heappush().
-This work is done in the pathfinder.py file and applied in the objects in simulation.py
+To distribute drones across multiple routes and avoid bottlenecks, we
+extend Dijkstra with a spur-node approach to find up to k distinct paths.
+Each new path is found by progressively blocking intermediate hubs from
+previously found paths, forcing exploration of alternative routes.
 
-**_Visual:_**
+**Drone assignment: cost-sorted pipeline**
 
-Finally we used *_pygame_* to show a visual representation of the project.
-Pygame is a cross-platform set of Python modules designed for writing video games and multimedia applications. It provides low-level graphics and audio libraries, allowing developers to manage windows, capture real-time keyboard/mouse events, and draw shapes directly onto a pixel grid.
+Paths are sorted by total turn cost (penalizing restricted hubs at 2
+turns each). Drones are assigned to the cheapest path first, pipelining
+behind each other. If multiple paths share the same cost, drones are
+spread evenly between them.
 
-In this project, Pygame serves as our dynamic visualizer to make the simulation tangible and easy to evaluate. Instead of looking at raw text outputs, the visualizer reads the parsed map coordinates and translates them into an interactive graphical interface. It handles automatic map scaling, displays real-time statistics (like the current simulation turn), and highlights different hub types using a distinct color-coding system. Most importantly, it animates the movement of drones from hub to hub, providing a clear, visual proof that our collision-avoidance and bandwidth bottleneck algorithms are working flawlessly in real time.
+**Complexity:**
+- Dijkstra: O((V + E) log V) per run, where V = hubs, E = connections
+- k-shortest paths: O(k × (V + E) log V)
+- Per-turn simulation: O(D × E) where D = number of drones
 
-##**_Instructions:-**
+**Capacity management:**
 
-**_Installation & Setup (Makefile)_**
+Each turn, the simulation tracks `incoming` drones per hub and `leaving`
+drones from each hub simultaneously, so that a drone moving out frees
+capacity for a drone moving in during the same turn — as required by the
+subject rules.
 
-This project uses `uv` as the package manager and provides a `Makefile` to automate common tasks. From the root of the repository, you can use the following commands:
+**Example input:**
 
-* `make install`: Installs the project dependencies using `uv sync`.
-* `make run`: Executes the main script.
-* `make debug`: Runs the main script in debug mode using Python's built-in debugger (`pdb`).
-* `make clean`: Removes temporary files and caches (e.g., `__pycache__`, `.mypy_cache`).
-* `make lint`: Runs `flake8` and `mypy` to check for coding standards and type hints.
-* `make build`: Builds the standalone reusable Python package (`.whl` and `.tar.gz`).
+```
+nb_drones: 3
+start_hub: start 0 0 [color=green]
+hub: junction 1 0 [color=yellow max_drones=2]
+hub: path_a 2 1 [color=blue]
+hub: path_b 2 -1 [color=blue]
+end_hub: goal 3 0 [color=red max_drones=3]
 
-**_Running the Application_**
+connection: start-junction
+connection: junction-path_a
+connection: junction-path_b
+connection: path_a-goal
+connection: path_b-goal
+```
 
-Use "make run" to start the program.
-You can use the mouse to select a map that will show the path of drones and number of turns.
-There is a mouse receptive button that allowes you to go back to select another map from here.
+**Expected output:**
 
-## **_Resources:_**
+```
+#1
+D0-junction D1-junction
+#2
+D0-path_a D1-path_b D2-junction
+#3
+D0-goal D1-goal D2-path_a
+#4
+D2-goal
+```
 
-https://www.w3schools.com/python/ref_module_heapq.asp
-https://docs.python.org/3/howto/regex.html
-https://pypi.org/project/pygame/
-https://www.pygame.org/docs/
-https://fr.wikipedia.org/wiki/Algorithme_de_Dijkstra
-https://www.datacamp.com/fr/tutorial/dijkstra-algorithm-in-python
+
+## Visual Representation
+
+The simulation uses **pygame** to display an interactive graphical
+interface:
+
+- **Hub color-coding:** start (green), end (red), normal (cyan),
+  restricted (orange), blocked (grey)
+- **Drone display:** drones in transit toward a restricted hub appear
+  in **yellow at the midpoint of the connection** for one turn, then
+  on the restricted hub the next turn — making the 2-turn cost visually
+  clear
+- **Auto-scaling:** the map scales and centers automatically to fit any
+  topology on screen
+- **Turn counter:** current turn displayed in real time; turns green
+  with final count when simulation ends
+- **Navigation buttons:** "Back to Menu" returns to map selection,
+  "Restart" replays the current map from the beginning
+- **Menu:** lists all `.txt` map files found in the `maps/` directory
+
+
+## Instructions
+
+**Installation & Setup (Makefile)**
+
+This project uses `uv` as the package manager. From the root:
+
+- `make install` — installs dependencies via `uv sync`
+- `make run` — runs the simulation
+- `make debug` — runs with Python's built-in debugger (`pdb`)
+- `make clean` — removes `__pycache__`, `.mypy_cache` and other caches
+- `make lint` — runs `flake8` and `mypy` for code style and type checking
+- `make build` — builds the distributable package (`.whl` and `.tar.gz`)
+
+**Running the Application**
+
+```bash
+make install
+make run
+```
+
+A pygame window opens with a map selection menu. Click a map to start
+the simulation. Use "Back to Menu" to return, or "Restart" to replay.
+
+**Map files** must be placed in a `maps/` directory at the project root.
+The program scans it recursively for `.txt` files.
+
+
+## Resources
+
+- https://www.w3schools.com/python/ref_module_heapq.asp
+- https://docs.python.org/3/howto/regex.html
+- https://pypi.org/project/pygame/
+- https://www.pygame.org/docs/
+- https://fr.wikipedia.org/wiki/Algorithme_de_Dijkstra
+- https://www.datacamp.com/fr/tutorial/dijkstra-algorithm-in-python
+- https://en.wikipedia.org/wiki/Yen%27s_algorithm
+
+**Use of AI:**
+Claude (Anthropic) was used to assist with debugging the simulation
+logic, improving the path distribution algorithm, and refining the
+visual representation. All generated code was reviewed, tested, and
+understood before inclusion.

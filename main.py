@@ -6,8 +6,9 @@ from simulation import Simulation
 from visual import main_visual
 
 
-def get_map_files(directory="maps"):
-    map_files = []
+def get_map_files(directory="maps") -> list[str]:
+    """Recursively find all .txt map files in directory"""
+    map_files: list[str] = []
     if not os.path.exists(directory):
         return map_files
     for root, _, files in os.walk(directory):
@@ -18,7 +19,11 @@ def get_map_files(directory="maps"):
     return sorted(map_files)
 
 
-def run_menu(screen, map_files):
+CAPACITY_INFO = "--capacity-info" in sys.argv
+
+
+def run_menu(screen: pygame.Surface, map_files: list) -> str | None:
+    """Display the map selection menu and return the chosen map path"""
     clock = pygame.time.Clock()
     font_title = pygame.font.SysFont("Arial", 28, bold=True)
     font_item = pygame.font.SysFont("Arial", 16)
@@ -70,7 +75,8 @@ def run_menu(screen, map_files):
         clock.tick(30)
 
 
-def main():
+def main() -> None:
+    """Entry point: initialize pygame, show menu, and run selected maps"""
     pygame.init()
     WIDTH, HEIGHT = 1000, 800
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -89,12 +95,13 @@ def main():
             break
         print(f"\nLoading map: {selected_map}...")
         try:
-            parser = Parser(selected_map)
-            parser.load()
-            simulation = Simulation(parser)
-
-            print("Starting Simulation...")
-            main_visual(simulation, screen)
+            result = "restart"
+            while result == "restart":
+                parser = Parser(selected_map)
+                parser.load()
+                simulation = Simulation(parser)
+                print("Starting Simulation...")
+                result = main_visual(simulation, screen, CAPACITY_INFO)
             print("Returning to Menu.")
         except Exception as e:
             print(f"Error while loading map: {e}")

@@ -9,6 +9,9 @@ install:
 run: install
 	uv run $(PYTHON) $(MAIN_SCRIPT)
 
+exo: install
+	uv run $(PYTHON) $(MAIN_SCRIPT) --capacity-info
+
 debug:
 	uv run $(PYTHON) -m pdb $(MAIN_SCRIPT)
 
