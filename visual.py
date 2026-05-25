@@ -50,9 +50,26 @@ def draw_everything(
         end_point = to_pixel(h2.x, h2.y, scale, offset_x, offset_y)
         pygame.draw.line(screen, GREY, start_point, end_point, 2)
 
+    COLOR_MAP = {
+        "red":     (220, 50,  50),
+        "blue":    (50,  100, 220),
+        "green":   (50,  200, 50),
+        "yellow":  (220, 220, 50),
+        "orange":  (255, 165, 0),
+        "purple":  (160, 50,  200),
+        "cyan":    (0,   200, 220),
+        "brown":   (160, 100, 50),
+        "gold":    (220, 180, 0),
+        "lime":    (150, 255, 50),
+        "magenta": (220, 50,  220),
+        "gray":    (150, 150, 150),
+        "grey":    (150, 150, 150),
+        "white":   (240, 240, 240),
+        "black":   (30,  30,  30),
+    }
+
     for name, hub in simulation.hubs.items():
         center = to_pixel(hub.x, hub.y, scale, offset_x, offset_y)
-        color = (0, 200, 255)
         if hub.type == "start_hub" or hub.name.lower() == "start":
             color = (50, 255, 50)
         elif hub.type == "end_hub" or hub.name.lower() == "goal":
@@ -61,6 +78,8 @@ def draw_everything(
             color = (255, 165, 0)
         elif hub.type == "blocked":
             color = (100, 100, 100)
+        else:
+            color = COLOR_MAP.get(hub.color, (0, 200, 255))
 
         hub_rect = pygame.Rect(center[0] - 15, center[1] - 15, 30, 30)
         pygame.draw.rect(screen, color, hub_rect)
@@ -74,8 +93,6 @@ def draw_everything(
     hub_drone_counts = {}
     for drone in simulation.drones:
         if drone.in_transit:
-            # Drone en transit vers un restricted : affiché au milieu
-            # de la connexion entre prev_hub et current_hub (en jaune)
             prev_pos = to_pixel(
                 drone.prev_hub.x, drone.prev_hub.y, scale, offset_x, offset_y
             )
@@ -99,7 +116,6 @@ def draw_everything(
                              (d_pos[0], d_pos[1] - off),
                              (d_pos[0], d_pos[1] + off), width_line)
         else:
-            # Drone posé sur son hub : affiché directement dessus (en gris)
             hub = drone.current_hub
             if hub not in hub_drone_counts:
                 hub_drone_counts[hub] = 0

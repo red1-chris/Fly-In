@@ -37,6 +37,7 @@ class Drone:
         self.prev_hub = self.current_hub
         self.current_hub = next_hub
         self.current_hub.drones.append(self)
+        # initiating restricted hub reactions
         self.wait_turns = next_hub.cost - 1
         if self.wait_turns > 0:
             self.in_transit = True

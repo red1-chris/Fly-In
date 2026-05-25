@@ -35,7 +35,7 @@ class Parser:
             return {}
 
     def load(self) -> None:
-        """Load and parse the map file, raising errors on ivalid input."""
+        """Load and parse the map file, raising errors on invalid input."""
         with open(self.file_path, 'r') as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()

@@ -38,7 +38,7 @@ class Hub:
                 f"drones={len(self.drones)}/{self.max_drones})")
 
     def __lt__(self, other: Hub) -> bool:
-        """Compare hubs by name for heap orderind in Dijkstra"""
+        """'less that', Compares hubs by name for heap orderind in Dijkstra"""
         return self.name < other.name
 
 
