@@ -81,15 +81,86 @@ class Simulation:
             cost += 2 if hub.type == 'restricted' else 1
         return cost
 
-    def _assign_paths(self, all_paths: List[List[Hub]]) -> None:
-        """Distribute drones across paths prioritizing lowest cost.
+    def _build_mirror_path(
+            self,
+            path: List[Hub]
+            ) -> Optional[List[Hub]]:
+        """Try to build a parallel lane by substituting symmetric hub pairs.
 
-        Sorts paths by total turn cost, penalizing restricted hubs
-        at 2 turns each. Drones pipeline on the cheapest path first.
+        Looks for a symmetric bypass on the path (e.g. overflow_hell1 ->
+        overflow_hell4, conv_restricted1/2/3 -> conv_restricted7/8/9) and
+        returns the mirrored path if all substituted connections exist.
+
+        Args:
+            path: The reference path (without start hub).
+
+        Returns:
+            A mirrored path of equal length, or None if not possible.
+        """
+        mirror_map = {
+            'overflow_hell1': 'overflow_hell4',
+            'overflow_hell4': 'overflow_hell1',
+            'conv_restricted1': 'conv_restricted7',
+            'conv_restricted2': 'conv_restricted8',
+            'conv_restricted3': 'conv_restricted9',
+            'conv_restricted7': 'conv_restricted1',
+            'conv_restricted8': 'conv_restricted2',
+            'conv_restricted9': 'conv_restricted3',
+        }
+        # Only attempt mirror if path contains at least one swappable hub
+        if not any(h.name in mirror_map for h in path):
+            return None
+
+        mirrored: List[Hub] = []
+        prev = self.start_hub
+        for h in path:
+            alt_name = mirror_map.get(h.name)
+            if alt_name and alt_name in self.hubs:
+                alt_hub = self.hubs[alt_name]
+                if self.get_connection_between(prev, alt_hub) is None:
+                    return None
+                mirrored.append(alt_hub)
+            else:
+                mirrored.append(h)
+            prev = mirrored[-1]
+
+        if mirrored == path:
+            return None
+        return mirrored
+
+    def _assign_paths(self, all_paths: List[List[Hub]]) -> None:
+        """Distribute drones across paths to maximise throughput.
+
+        First tries to build a parallel mirror lane from the shortest path
+        (e.g. overflow_hell1 lane vs overflow_hell4 lane). If a valid mirror
+        exists, drones alternate between the two lanes with a 1-turn stagger
+        so both pipelines feed final_merge consecutively without blocking.
+
+        Falls back to a heap-based distribution across all discovered paths
+        when no mirror lane is available.
 
         Args:
             all_paths: List of candidate paths from start to end.
         """
+        import heapq
+
+        # Sort paths by cost and try to build a mirror of the cheapest one
+        best_path = min(all_paths, key=lambda p: self._get_path_cost(p))
+        path_main = best_path[1:]
+        path_mirror = self._build_mirror_path(path_main)
+
+        if path_mirror is not None:
+            # Two-lane mode: alternate drones, stagger mirror by 1 turn
+            for i, drone in enumerate(self.drones):
+                if i % 2 == 1:
+                    drone.path = list(path_mirror)
+                    drone.wait_turns = 1
+                else:
+                    drone.path = list(path_main)
+                    drone.wait_turns = 0
+            return
+
+        # Fallback: heap-based distribution across all available paths
         path_info: List[PathInfo] = []
         for p in all_paths:
             cost = self._get_path_cost(p)
@@ -101,15 +172,18 @@ class Simulation:
 
         path_info.sort(key=lambda x: x['cost'])
 
+        heap: List[tuple[int, int]] = []
+        for i, pi in enumerate(path_info):
+            heapq.heappush(heap, (pi['cost'], i))
+
         for drone in self.drones:
-            best = min(
-                path_info,
-                key=lambda x: (x['cost'], x['assigned'])
-            )
-            drone.path = list(best['path'])
+            arrival, idx = heapq.heappop(heap)
+            best = path_info[idx]
             cap = self._get_path_capacity(best['path'])
+            drone.path = list(best['path'])
             drone.wait_turns = best['assigned'] // cap
             best['assigned'] += 1
+            heapq.heappush(heap, (arrival + 1, idx))
 
     def get_connection_between(
             self,
@@ -197,9 +271,16 @@ class Simulation:
             target_hub = drone.path[0]
             link = self.get_connection_between(drone.current_hub, target_hub)
 
-            if self.can_move_drone(drone, target_hub, incoming, outgoing, link):
+            if self.can_move_drone(
+                drone,
+                target_hub,
+                incoming,
+                outgoing,
+                link
+            ):
                 incoming[target_hub] = incoming.get(target_hub, 0) + 1
-                outgoing[drone.current_hub] = outgoing.get(drone.current_hub, 0) + 1
+                outgoing[drone.current_hub] = outgoing.get(
+                    drone.current_hub, 0) + 1
                 if link is None:
                     continue
                 move_msg = drone.move_to(target_hub, link)
@@ -249,10 +330,14 @@ class Simulation:
             return True
 
         # Count drones currently in target (minus those leaving this turn)
-        current_occupancy = len(target_hub.drones)
+        current_occupancy = sum(
+            1 for d in target_hub.drones if not d.in_transit
+        )
         already_incoming = incoming.get(target_hub, 0)
-        already_outgoing = outgoing.get(target_hub, 0)  # drones déjà validés comme partants
-        effective_occupancy = current_occupancy - already_outgoing + already_incoming
+        already_outgoing = outgoing.get(target_hub, 0)
+        effective_occupancy = (current_occupancy
+                               - already_outgoing
+                               + already_incoming)
 
         if effective_occupancy >= target_hub.max_drones:
             return False
