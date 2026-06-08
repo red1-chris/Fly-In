@@ -107,6 +107,8 @@ class Simulation:
                 key=lambda x: (x['cost'], x['assigned'])
             )
             drone.path = list(best['path'])
+            cap = self._get_path_capacity(best['path'])
+            drone.wait_turns = best['assigned'] // cap
             best['assigned'] += 1
 
     def get_connection_between(
@@ -180,6 +182,7 @@ class Simulation:
         # Track how many drones are moving into each hub this turn,
         # so we respect capacity even when multiple drones move simultaneously.
         incoming: Dict[Hub, int] = {}
+        outgoing: Dict[Hub, int] = {}
 
         for drone in self.drones:
             if drone.is_arrived:
@@ -194,8 +197,9 @@ class Simulation:
             target_hub = drone.path[0]
             link = self.get_connection_between(drone.current_hub, target_hub)
 
-            if self.can_move_drone(drone, target_hub, incoming, link):
+            if self.can_move_drone(drone, target_hub, incoming, outgoing, link):
                 incoming[target_hub] = incoming.get(target_hub, 0) + 1
+                outgoing[drone.current_hub] = outgoing.get(drone.current_hub, 0) + 1
                 if link is None:
                     continue
                 move_msg = drone.move_to(target_hub, link)
@@ -212,6 +216,7 @@ class Simulation:
             drone: Drone,
             target_hub: Hub,
             incoming: Dict[Hub, int],
+            outgoing: Dict[Hub, int],
             conn: Optional[Connection]
             ) -> bool:
         """Check whether a drone can legally move to target_hub this turn.
@@ -246,13 +251,8 @@ class Simulation:
         # Count drones currently in target (minus those leaving this turn)
         current_occupancy = len(target_hub.drones)
         already_incoming = incoming.get(target_hub, 0)
-        # Drones leaving target_hub this turn free up space
-        leaving = sum(
-            1 for d in target_hub.drones
-            if d.can_move() and d.path
-            and self.get_connection_between(target_hub, d.path[0]) is not None
-        )
-        effective_occupancy = current_occupancy - leaving + already_incoming
+        already_outgoing = outgoing.get(target_hub, 0)  # drones déjà validés comme partants
+        effective_occupancy = current_occupancy - already_outgoing + already_incoming
 
         if effective_occupancy >= target_hub.max_drones:
             return False
