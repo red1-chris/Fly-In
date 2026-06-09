@@ -66,20 +66,16 @@ def draw_everything(
         "grey":    (150, 150, 150),
         "white":   (240, 240, 240),
         "black":   (30,  30,  30),
+        "maroon":  (128, 0,   0),
+        "darkred": (139, 0,   0),
+        "crimson": (220, 20,  60),
+        "violet":  (138, 43,  226),
+        "rainbow": (255, 100, 200)
     }
 
     for name, hub in simulation.hubs.items():
         center = to_pixel(hub.x, hub.y, scale, offset_x, offset_y)
-        if hub.type == "start_hub" or hub.name.lower() == "start":
-            color = (50, 255, 50)
-        elif hub.type == "end_hub" or hub.name.lower() == "goal":
-            color = (255, 50, 50)
-        elif hub.type == "restricted":
-            color = (255, 165, 0)
-        elif hub.type == "blocked":
-            color = (100, 100, 100)
-        else:
-            color = COLOR_MAP.get(hub.color, (0, 200, 255))
+        color = COLOR_MAP.get(hub.color, (0, 200, 255))
 
         hub_rect = pygame.Rect(center[0] - 15, center[1] - 15, 30, 30)
         pygame.draw.rect(screen, color, hub_rect)

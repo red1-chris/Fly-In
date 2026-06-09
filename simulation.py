@@ -87,6 +87,7 @@ class Simulation:
             ) -> Optional[List[Hub]]:
         """Try to build a parallel lane by substituting symmetric hub pairs.
 
+        specific to obtain the turn objective on the dream map.
         Looks for a symmetric bypass on the path (e.g. overflow_hell1 ->
         overflow_hell4, conv_restricted1/2/3 -> conv_restricted7/8/9) and
         returns the mirrored path if all substituted connections exist.
